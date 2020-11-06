@@ -1,0 +1,18 @@
+1:C 06 Nov 2020 08:17:30.160 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+1:C 06 Nov 2020 08:17:30.166 # Redis version=6.0.9, bits=64, commit=00000000, modified=0, pid=1, just started
+1:C 06 Nov 2020 08:17:30.170 # Configuration loaded
+1:M 06 Nov 2020 08:17:30.178 * Running mode=standalone, port=6379.
+1:M 06 Nov 2020 08:17:30.184 # WARNING: The TCP backlog setting of 511 cannot be enforced because /proc/sys/net/core/somaxconn is set to the lower value of 128.
+1:M 06 Nov 2020 08:17:30.188 # Server initialized
+1:M 06 Nov 2020 08:17:30.195 * Ready to accept connections
+1:M 06 Nov 2020 08:18:26.448 - Accepted 127.0.0.1:38382
+1:M 06 Nov 2020 08:20:10.621 - Client closed connection
+1:M 06 Nov 2020 08:24:41.040 - Accepted 127.0.0.1:38384
+1:M 06 Nov 2020 08:25:28.380 - Client closed connection
+1:signal-handler (1604651240) Received SIGTERM scheduling shutdown...
+1:M 06 Nov 2020 08:27:20.761 # User requested shutdown...
+1:M 06 Nov 2020 08:27:20.764 * Calling fsync() on the AOF file.
+1:M 06 Nov 2020 08:27:20.769 * Saving the final RDB snapshot before exiting.
+1:M 06 Nov 2020 08:27:20.776 * DB saved on disk
+1:M 06 Nov 2020 08:27:20.781 * Removing the pid file.
+1:M 06 Nov 2020 08:27:20.785 # Redis is now ready to exit, bye bye...
