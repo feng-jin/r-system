@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"go_server/src/api_server/config"
 	"go_server/src/api_server/logic"
-	"log"
+	"go_server/src/lib/logger"
 )
 
 func main() {
@@ -14,9 +14,9 @@ func main() {
 	c, err := config.NewConfig(*configFileName)
 
 	if err != nil {
-		log.Print(err)
 		fmt.Println("config file load failed:", *configFileName)
 		return
 	}
-	logic.InitServer(c)
+	logic.Init(c)
+	logger.Info("hello world!")
 }

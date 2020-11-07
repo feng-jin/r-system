@@ -1,6 +1,11 @@
 server_host="0.0.0.0:20019"
+env="test"
 
 [Redis]
 addrs          = "127.0.0.1:6379"
 pool_size      = 1
 pwd            = ""
+
+[Log]
+level = "DEBUG"
+dir = "../../logs/test/api_server.log"

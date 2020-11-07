@@ -2,6 +2,7 @@ package logic
 
 import (
 	"go_server/src/api_server/config"
+	"go_server/src/lib/logger"
 	"go_server/src/lib/util"
 )
 
@@ -11,7 +12,8 @@ type Server struct {
 
 var ThisServer *Server
 
-func InitServer(c *config.Config) error {
+func Init(c *config.Config) error {
+	logger.InitLogger(&c.LogConfig)
 	rdb, err := util.NewRedisClient(&c.RedisConfig)
 	if err != nil {
 		return err
