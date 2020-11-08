@@ -3,3 +3,9 @@ time="2020-11-07 00:36:33" level=info msg="hello world!" func=go_server/src/lib/
 time="2020-11-07 00:37:29" level=info msg="hello world!" func=go_server/src/lib/logger.Info file="/Users/jinfeng/r-system/go_server/src/lib/logger/logger.go:40"
 {"file":"/Users/jinfeng/r-system/go_server/src/lib/logger/logger.go:39","func":"go_server/src/lib/logger.Info","level":"info","msg":"hello world!","time":"2020-11-07 00:38:07"}
 {"file":"/Users/jinfeng/r-system/go_server/src/lib/logger/logger.go:40","func":"go_server/src/lib/logger.Info","level":"info","msg":"hello world!","time":"2020-11-07 00:45:52"}
+{"file":"/Users/jinfeng/r-system/go_server/src/lib/logger/logger.go:40","func":"go_server/src/lib/logger.Info","level":"info","msg":"hello world!","time":"2020-11-08 10:50:06"}
+{"file":"/Users/jinfeng/r-system/go_server/src/lib/logger/logger.go:40","func":"go_server/src/lib/logger.Info","level":"info","msg":"hello world!","time":"2020-11-08 10:51:17"}
+{"file":"/Users/jinfeng/r-system/go_server/src/lib/logger/logger.go:40","func":"go_server/src/lib/logger.Info","level":"info","msg":"hello world!","time":"2020-11-08 10:51:41"}
+{"file":"/Users/jinfeng/r-system/go_server/src/lib/logger/logger.go:40","func":"go_server/src/lib/logger.Info","level":"info","msg":"hello world!","time":"2020-11-08 10:52:11"}
+{"file":"/Users/jinfeng/r-system/go_server/src/lib/logger/logger.go:40","func":"go_server/src/lib/logger.Info","level":"info","msg":"hello world!","time":"2020-11-08 10:52:41"}
+{"file":"/Users/jinfeng/r-system/go_server/src/lib/logger/logger.go:40","func":"go_server/src/lib/logger.Info","level":"info","msg":"hello world!","time":"2020-11-08 10:53:08"}

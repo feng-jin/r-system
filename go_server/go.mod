@@ -2,19 +2,47 @@ module go_server
 
 go 1.12
 
-replace google.golang.org/grpc => google.golang.org/grpc v1.26.0
-
 require (
 	github.com/BurntSushi/toml v0.3.1
+	github.com/coreos/bbolt v1.3.4 // indirect
+	github.com/coreos/etcd v3.3.25+incompatible
+	github.com/coreos/go-semver v0.3.0 // indirect
+	github.com/coreos/go-systemd v0.0.0-20180511133405-39ca1b05acc7 // indirect
+	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
+	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/gin-gonic/gin v1.6.3
 	github.com/go-redis/redis/v8 v8.3.3
+	github.com/google/btree v1.0.0 // indirect
+	github.com/google/uuid v1.1.2 // indirect
+	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2 // indirect
+	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
+	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
+	github.com/prometheus/client_golang v1.8.0 // indirect
 	github.com/sirupsen/logrus v1.7.0
+	github.com/soheilhy/cmux v0.1.4 // indirect
+	github.com/stretchr/objx v0.1.1 // indirect
+	github.com/tmc/grpc-websocket-proxy v0.0.0-20200427203606-3cfed13b9966 // indirect
+	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
+	go.etcd.io/bbolt v1.3.5 // indirect
+	go.etcd.io/etcd v3.3.25+incompatible
+	go.uber.org/zap v1.16.0 // indirect
 	golang.org/x/net v0.0.0-20201031054903-ff519b6c9102 // indirect
 	golang.org/x/sys v0.0.0-20201106081118-db71ae66460a // indirect
 	golang.org/x/text v0.3.4 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
+	sigs.k8s.io/yaml v1.2.0 // indirect
+)
+
+replace (
+	github.com/coreos/bbolt v1.3.4 => go.etcd.io/bbolt v1.3.4
+	github.com/coreos/go-systemd => github.com/coreos/go-systemd/v22 v22.0.0
+	google.golang.org/grpc => google.golang.org/grpc v1.26.0
 )

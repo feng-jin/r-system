@@ -1,6 +1,6 @@
-all: install
+all: build
 
-install:
+build:
 	go build -o bin/api_server ./src/api_server
 	go mod tidy
 	go mod vendor
