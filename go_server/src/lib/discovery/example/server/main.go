@@ -1,140 +1,174 @@
+/**
+* etcd demo server
+* author: JetWu
+* date: 2020.05.01
+ */
 package main
 
 import (
-	"context"
+	"flag"
 	"fmt"
-	"net/http"
-	"sync"
+	proto "go_server/src/lib/proto/greet"
+	"net"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"go.etcd.io/etcd/clientv3"
+	"context"
+	"google.golang.org/grpc"
 )
 
-const (
-	EtcdPrefix   = "/test/server/"
-	ServerSerial = "1"
-	Address      = "http://127.0.0.1:18081/"
-)
+const schema = "ns"
 
+var host = "127.0.0.1" //服务器主机
 var (
-	EtcdAddress = []string{"http://127.0.0.1:2379"}
-	leaseTTL    = 5
+	Port        = flag.Int("Port", 3000, "listening port")                           //服务器监听端口
+	ServiceName = flag.String("ServiceName", "greet_service", "service name")        //服务名称
+	EtcdAddr    = flag.String("EtcdAddr", "127.0.0.1:2379", "register etcd address") //etcd的地址
 )
+var cli *clientv3.Client
 
-type HealthProvider struct {
-	etcdClient *EtcdClient
+//rpc服务接口
+type greetServer struct{}
+
+func (gs *greetServer) Morning(ctx context.Context, req *proto.GreetRequest) (*proto.GreetResponse, error) {
+	fmt.Printf("Morning 调用: %s\n", req.Name)
+	return &proto.GreetResponse{
+		Message: "Good morning, " + req.Name,
+		From:    fmt.Sprintf("127.0.0.1:%d", *Port),
+	}, nil
 }
 
-var (
-	healthProvider     *HealthProvider
-	healthProviderOnce sync.Once
-)
-
-func GetHealthProvider() *HealthProvider {
-	healthProviderOnce.Do(func() {
-		healthProvider = &HealthProvider{
-			etcdClient: NewEtcdClient(),
-		}
-	})
-	return healthProvider
+func (gs *greetServer) Night(ctx context.Context, req *proto.GreetRequest) (*proto.GreetResponse, error) {
+	fmt.Printf("Night 调用: %s\n", req.Name)
+	return &proto.GreetResponse{
+		Message: "Good night, " + req.Name,
+		From:    fmt.Sprintf("127.0.0.1:%d", *Port),
+	}, nil
 }
 
-type EtcdClient struct {
-	address  []string
-	username string
-	password string
-	kv       clientv3.KV
-	client   *clientv3.Client
-	ctx      context.Context
-	lease    clientv3.Lease
-	leaseID  clientv3.LeaseID
-	leaseTTL int64
-}
+//将服务地址注册到etcd中
+func register(etcdAddr, serviceName, serverAddr string, ttl int64) error {
+	var err error
 
-func NewEtcdClient() *EtcdClient {
-	var client = &EtcdClient{
-		ctx:      context.Background(),
-		address:  EtcdAddress,
-		leaseTTL: int64(leaseTTL),
-	}
-	err := client.connect()
-	if err != nil {
-		panic(err)
-	}
-	return client
-}
-
-func (etcdClient *EtcdClient) connect() (err error) {
-	etcdClient.client, err = clientv3.New(clientv3.Config{
-		Endpoints:   etcdClient.address,
-		DialTimeout: 5 * time.Second,
-		TLS:         nil,
-		Username:    etcdClient.username,
-		Password:    etcdClient.password,
-	})
-	if err != nil {
-		return
-	}
-	etcdClient.kv = clientv3.NewKV(etcdClient.client)
-	etcdClient.ctx = context.Background()
-	return
-}
-
-func (etcdClient *EtcdClient) Close() (err error) {
-	return etcdClient.client.Close()
-}
-
-func (etcdClient *EtcdClient) register(address string) (*clientv3.PutResponse, error) {
-	etcdClient.lease = clientv3.NewLease(etcdClient.client)
-	leaseResp, err := etcdClient.lease.Grant(etcdClient.ctx, etcdClient.leaseTTL)
-	if err != nil {
-		return nil, err
-	}
-	etcdClient.leaseID = leaseResp.ID
-	return etcdClient.kv.Put(etcdClient.ctx, EtcdPrefix+ServerSerial, address, clientv3.WithLease(leaseResp.ID))
-}
-
-func (etcdClient *EtcdClient) LeaseKeepAlive() error {
-	if etcdClient.lease == nil {
-		_, err := etcdClient.register(Address)
+	if cli == nil {
+		//构建etcd client
+		cli, err = clientv3.New(clientv3.Config{
+			Endpoints:   strings.Split(etcdAddr, ";"),
+			DialTimeout: 15 * time.Second,
+		})
 		if err != nil {
+			fmt.Printf("连接etcd失败：%s\n", err)
 			return err
 		}
 	}
-	_, err := etcdClient.lease.KeepAlive(etcdClient.ctx, etcdClient.leaseID)
-	if err != nil {
-		return err
-	}
+
+	//与etcd建立长连接，并保证连接不断(心跳检测)
+	ticker := time.NewTicker(time.Second * time.Duration(ttl))
+	go func() {
+		key := "/" + schema + "/" + serviceName + "/" + serverAddr
+		for {
+			resp, err := cli.Get(context.Background(), key)
+			//fmt.Printf("resp:%+v\n", resp)
+			if err != nil {
+				fmt.Printf("获取服务地址失败：%s", err)
+			} else if resp.Count == 0 { //尚未注册
+				err = keepAlive(serviceName, serverAddr, ttl)
+				if err != nil {
+					fmt.Printf("保持连接失败：%s", err)
+				}
+			}
+			<-ticker.C
+		}
+	}()
+
 	return nil
 }
 
-func healthCheck(provider *HealthProvider) {
-	var tick = time.NewTicker(time.Second)
-	for {
-		select {
-		case <-tick.C:
-			err := provider.etcdClient.LeaseKeepAlive()
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
+//保持服务器与etcd的长连接
+func keepAlive(serviceName, serverAddr string, ttl int64) error {
+	//创建租约
+	leaseResp, err := cli.Grant(context.Background(), ttl)
+	if err != nil {
+		fmt.Printf("创建租期失败：%s\n", err)
+		return err
+	}
+
+	//将服务地址注册到etcd中
+	key := "/" + schema + "/" + serviceName + "/" + serverAddr
+	_, err = cli.Put(context.Background(), key, serverAddr, clientv3.WithLease(leaseResp.ID))
+	if err != nil {
+		fmt.Printf("注册服务失败：%s", err)
+		return err
+	}
+
+	//建立长连接
+	ch, err := cli.KeepAlive(context.Background(), leaseResp.ID)
+	if err != nil {
+		fmt.Printf("建立长连接失败：%s\n", err)
+		return err
+	}
+
+	//清空keepAlive返回的channel
+	go func() {
+		for {
+			<-ch
 		}
+	}()
+	return nil
+}
+
+//取消注册
+func unRegister(serviceName, serverAddr string) {
+	if cli != nil {
+		key := "/" + schema + "/" + serviceName + "/" + serverAddr
+		cli.Delete(context.Background(), key)
 	}
 }
 
 func main() {
+	flag.Parse()
 
-	provider := GetHealthProvider()
-	go healthCheck(provider)
+	//监听网络
+	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *Port))
+	if err != nil {
+		fmt.Println("监听网络失败：", err)
+		return
+	}
+	defer listener.Close()
 
-	defer provider.etcdClient.Close()
+	//创建grpc句柄
+	srv := grpc.NewServer()
+	defer srv.GracefulStop()
 
-	engine := gin.Default()
+	//将greetServer结构体注册到grpc服务中
+	proto.RegisterGreetServer(srv, &greetServer{})
 
-	engine.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, "one")
-	})
+	//将服务地址注册到etcd中
+	serverAddr := fmt.Sprintf("%s:%d", host, *Port)
+	fmt.Printf("greeting server address: %s\n", serverAddr)
+	register(*EtcdAddr, *ServiceName, serverAddr, 5)
 
-	engine.Run(":18081")
+	//关闭信号处理
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT)
+	go func() {
+		s := <-ch
+		unRegister(*ServiceName, serverAddr)
+		if i, ok := s.(syscall.Signal); ok {
+			os.Exit(int(i))
+		} else {
+			os.Exit(0)
+		}
+	}()
+
+	//监听服务
+	err = srv.Serve(listener)
+	if err != nil {
+		fmt.Println("监听异常：", err)
+		return
+	}
 }

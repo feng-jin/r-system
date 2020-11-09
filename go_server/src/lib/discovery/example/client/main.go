@@ -1,129 +1,177 @@
+/**
+* etcd demo client
+* author: JetWu
+* date: 2020.05.02
+ */
 package main
 
 import (
-	"context"
+	"flag"
 	"fmt"
-	"io/ioutil"
-	"math/rand"
-	"net/http"
+	proto "go_server/src/lib/proto/greet"
+	"log"
+	"strings"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/mvcc/mvccpb"
+	"go.etcd.io/etcd/clientv3"
+	"context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/resolver"
 )
+
+const schema = "ns"
 
 var (
-	EtcdAddress  = []string{"http://127.0.0.1:2379"}
-	ServerPrefix = "/test/server/"
+	ServiceName = flag.String("ServiceName", "greet_service", "service name")        //服务名称
+	EtcdAddr    = flag.String("EtcdAddr", "127.0.0.1:2379", "register etcd address") //etcd的地址
 )
 
-type EtcdClient struct {
-	address  []string
-	username string
-	password string
-	kv       clientv3.KV
-	client   *clientv3.Client
-	ctx      context.Context
-	lease    clientv3.Lease
-	leaseID  clientv3.LeaseID
+var cli *clientv3.Client
+
+//etcd解析器
+type etcdResolver struct {
+	etcdAddr   string
+	clientConn resolver.ClientConn
 }
 
-func newEtcdClient() *EtcdClient {
-	var client = &EtcdClient{
-		ctx:     context.Background(),
-		address: EtcdAddress,
-	}
-	err := client.connect()
-	if err != nil {
-		panic(err)
-	}
-	return client
+//初始化一个etcd解析器
+func newResolver(etcdAddr string) resolver.Builder {
+	return &etcdResolver{etcdAddr: etcdAddr}
 }
 
-func (etcdClient *EtcdClient) connect() (err error) {
-	etcdClient.client, err = clientv3.New(clientv3.Config{
-		Endpoints:   etcdClient.address,
-		DialTimeout: 5 * time.Second,
-		TLS:         nil,
-		Username:    etcdClient.username,
-		Password:    etcdClient.password,
-	})
-	if err != nil {
-		return
-	}
-	etcdClient.kv = clientv3.NewKV(etcdClient.client)
-	etcdClient.ctx = context.Background()
-	return
+func (r *etcdResolver) Scheme() string {
+	return schema
 }
 
-func (etcdClient *EtcdClient) list(prefix string) ([]string, error) {
-	resp, err := etcdClient.kv.Get(etcdClient.ctx, prefix, clientv3.WithPrefix())
-	if err != nil {
-		return nil, err
-	}
-	servers := make([]string, 0)
-	for _, value := range resp.Kvs {
-		if value != nil {
-			servers = append(servers, string(value.Value))
+//watch有变化以后会调用
+func (r *etcdResolver) ResolveNow(rn resolver.ResolveNowOptions) {
+	log.Println("ResolveNow")
+	fmt.Println(rn)
+}
+
+//解析器关闭时调用
+func (r *etcdResolver) Close() {
+	log.Println("Close")
+}
+
+//构建解析器 grpc.Dial()同步调用
+func (r *etcdResolver) Build(target resolver.Target, clientConn resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
+	var err error
+
+	//构建etcd client
+	if cli == nil {
+		cli, err = clientv3.New(clientv3.Config{
+			Endpoints:   strings.Split(r.etcdAddr, ";"),
+			DialTimeout: 15 * time.Second,
+		})
+		if err != nil {
+			fmt.Printf("连接etcd失败：%s\n", err)
+			return nil, err
 		}
 	}
-	return servers, nil
+
+	r.clientConn = clientConn
+
+	go r.watch("/" + target.Scheme + "/" + target.Endpoint + "/")
+
+	return r, nil
 }
 
-func (etcdClient *EtcdClient) close() (err error) {
-	return etcdClient.client.Close()
+//监听etcd中某个key前缀的服务地址列表的变化
+func (r *etcdResolver) watch(keyPrefix string) {
+	//初始化服务地址列表
+	var addrList []resolver.Address
+
+	resp, err := cli.Get(context.Background(), keyPrefix, clientv3.WithPrefix())
+	if err != nil {
+		fmt.Println("获取服务地址列表失败：", err)
+	} else {
+		for i := range resp.Kvs {
+			addrList = append(addrList, resolver.Address{Addr: strings.TrimPrefix(string(resp.Kvs[i].Key), keyPrefix)})
+		}
+	}
+
+	r.clientConn.NewAddress(addrList)
+
+	//监听服务地址列表的变化
+	rch := cli.Watch(context.Background(), keyPrefix, clientv3.WithPrefix())
+	for n := range rch {
+		for _, ev := range n.Events {
+			addr := strings.TrimPrefix(string(ev.Kv.Key), keyPrefix)
+			switch ev.Type {
+			case mvccpb.PUT:
+				if !exists(addrList, addr) {
+					addrList = append(addrList, resolver.Address{Addr: addr})
+					r.clientConn.NewAddress(addrList)
+				}
+			case mvccpb.DELETE:
+				if s, ok := remove(addrList, addr); ok {
+					addrList = s
+					r.clientConn.NewAddress(addrList)
+				}
+			}
+		}
+	}
 }
 
-func genRand(num int) int {
-	return int(rand.Int31n(int32(num)))
+func exists(l []resolver.Address, addr string) bool {
+	for i := range l {
+		if l[i].Addr == addr {
+			return true
+		}
+	}
+	return false
 }
 
-func getServer(client *EtcdClient) (string, error) {
-	servers, err := client.list(ServerPrefix)
-	if err != nil {
-		return "", err
+func remove(s []resolver.Address, addr string) ([]resolver.Address, bool) {
+	for i := range s {
+		if s[i].Addr == addr {
+			s[i] = s[len(s)-1]
+			return s[:len(s)-1], true
+		}
 	}
-	return servers[genRand(len(servers))], nil
-}
-
-func Get(url string) ([]byte, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
+	return nil, false
 }
 
 func main() {
-	client := newEtcdClient()
-	err := client.connect()
+	flag.Parse()
+
+	//注册etcd解析器
+	r := newResolver(*EtcdAddr)
+	resolver.Register(r)
+
+	//客户端连接服务器(负载均衡：轮询) 会同步调用r.Build()
+	conn, err := grpc.Dial(r.Scheme()+"://author/"+*ServiceName, grpc.WithBalancerName("round_robin"), grpc.WithInsecure())
 	if err != nil {
-		panic(err)
+		fmt.Println("连接服务器失败：", err)
 	}
-	defer client.close()
+	defer conn.Close()
 
-	for i := 0; i < 10; i++ {
-		address, err := getServer(client)
+	//获得grpc句柄
+	c := proto.NewGreetClient(conn)
+	ticker := time.NewTicker(1 * time.Second)
+	for range ticker.C {
+		fmt.Println("Morning 调用...")
+		resp1, err := c.Morning(
+			context.Background(),
+			&proto.GreetRequest{Name: "JetWu"},
+		)
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println("Morning调用失败：", err)
 			return
 		}
+		fmt.Printf("Morning 响应：%s，来自：%s\n", resp1.Message, resp1.From)
 
-		data, err := Get(address + "ping")
+		fmt.Println("Night 调用...")
+		resp2, err := c.Night(
+			context.Background(),
+			&proto.GreetRequest{Name: "JetWu"},
+		)
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Println("Night调用失败：", err)
 			return
 		}
-		fmt.Println(string(data))
-		time.Sleep(2 * time.Second)
+		fmt.Printf("Night 响应：%s，来自：%s\n", resp2.Message, resp2.From)
 	}
 }
