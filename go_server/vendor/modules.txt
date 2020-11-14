@@ -3,7 +3,6 @@ github.com/BurntSushi/toml
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
 # github.com/coreos/etcd v3.3.25+incompatible
-github.com/coreos/etcd/mvcc/mvccpb
 github.com/coreos/etcd/auth/authpb
 github.com/coreos/etcd/clientv3/balancer
 github.com/coreos/etcd/clientv3/balancer/picker
@@ -11,6 +10,7 @@ github.com/coreos/etcd/clientv3/balancer/resolver/endpoint
 github.com/coreos/etcd/clientv3/credentials
 github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes
 github.com/coreos/etcd/etcdserver/etcdserverpb
+github.com/coreos/etcd/mvcc/mvccpb
 github.com/coreos/etcd/pkg/logutil
 github.com/coreos/etcd/pkg/types
 github.com/coreos/etcd/version

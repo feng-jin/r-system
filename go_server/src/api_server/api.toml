@@ -1,4 +1,4 @@
-server_host="0.0.0.0:20019"
+port="20019"
 env="test"
 
 [Redis]
