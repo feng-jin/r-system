@@ -1,19 +1,19 @@
 package discovery
 
 import (
-	"context"
 	"fmt"
-	"go.etcd.io/etcd/clientv3"
 	"go_server/src/lib/discovery/config"
 	"go_server/src/lib/logger"
 	"strings"
-	"time"
+
+	"go.etcd.io/etcd/clientv3"
 )
 
 var (
 	client *clientv3.Client
 )
 
+// Init 初始化etcd
 func Init(etcdAddr string) error {
 	var err error
 	if client == nil {
@@ -29,8 +29,4 @@ func Init(etcdAddr string) error {
 		}
 	}
 	return nil
-}
-
-func Context1s() (ctx context.Context, cancel context.CancelFunc) {
-	return context.WithTimeout(context.TODO(), time.Second)
 }

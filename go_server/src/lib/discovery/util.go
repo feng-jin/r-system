@@ -5,6 +5,7 @@ import (
 	"net"
 )
 
+// 获取本机ip地址
 func getIntranetIP() (ip string) {
 	if addrs, err := net.InterfaceAddrs(); err == nil {
 		for _, address := range addrs {
@@ -19,6 +20,7 @@ func getIntranetIP() (ip string) {
 	return
 }
 
+// 自动获取本机的ip以及端口号，ip:port格式
 func getListener() (listener net.Listener, host string, err error) {
 	host = "0.0.0.0:0"
 	listener, err = net.Listen("tcp", host)
@@ -29,4 +31,3 @@ func getListener() (listener net.Listener, host string, err error) {
 	}
 	return
 }
-

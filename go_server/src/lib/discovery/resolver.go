@@ -3,11 +3,12 @@ package discovery
 import (
 	"context"
 	"fmt"
-	"go.etcd.io/etcd/clientv3"
 	"go_server/src/lib/discovery/config"
+	"strings"
+
+	"go.etcd.io/etcd/clientv3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/resolver"
-	"strings"
 )
 
 //EtcdResolver解析器
@@ -23,7 +24,7 @@ func Resolver(env string, name string) *grpc.ClientConn {
 	target := fmt.Sprintf(config.TargetFormat, r.Scheme(), env, name)
 	//客户端连接服务器(负载均衡：轮询) 会同步调用r.Build()
 	dailOpts := []grpc.DialOption{
-		grpc.WithBalancerName("round_robin"),
+		grpc.WithBalancerName("round_robin"), // grpc内部提供的轮询负载均衡
 		grpc.WithInsecure(),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(1024 * 1024 * 16),

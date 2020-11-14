@@ -13,7 +13,7 @@ import (
 	"go.etcd.io/etcd/clientv3"
 )
 
-//Service ...
+//Service 服务端用于服务注册的对象
 type Service struct {
 	Name string //服务名称
 	Host string //{ip}:{port}
@@ -31,7 +31,6 @@ func (s *Service) register() error {
 	s.Key = fmt.Sprintf(config.DirFormat, config.Scheme, s.Env, s.Name) + s.Host
 	ticker := time.NewTicker(time.Second * time.Duration(config.TickerInterval))
 	go func() {
-		fmt.Println(s.Key)
 		for {
 			resp, err := client.Get(context.Background(), s.Key)
 			if err != nil {
