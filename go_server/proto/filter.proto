@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+import "errmsg.proto";
+import "recall.proto";
+
+package filter;
+option go_package = "go_server/src/lib/proto/filter";
+
+message HistoryFilterReq {
+    string user_id           = 1;
+    recall.RecallResp recallResp = 2;
+}
+
+message HistoryFilterResp {
+    errmsg.ErrMsg  err       = 1;
+    recall.RecallResp recallResp = 2;
+}
+
+message HistoryAddReq {
+    string user_id           = 1;
+    int32 history_action     = 2;
+    repeated string item_ids = 3;
+}
+
+message HistoryAddResp {
+    errmsg.ErrMsg err = 1;
+}
+
+service Filter {
+    rpc HistoryFilter (HistoryFilterReq) returns (HistoryFilterResp) {}
+    rpc HistoryAdd (HistoryAddReq) returns (HistoryAddResp) {}
+}

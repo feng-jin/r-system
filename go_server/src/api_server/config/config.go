@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	Host        string           `toml:"server_host"`
+	Host        string           `toml:"host"`
 	Env         string           `toml:"env"`
 	RedisConfig util.RedisConfig `toml:"Redis"`
 	LogConfig   logger.LogConfig `toml:"Log"`

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go_server/src/lib/discovery"
 	proto "go_server/src/lib/proto/greet"
+	"strings"
 )
 
 var (
@@ -35,7 +36,7 @@ func (gs *GreetServer) Night(ctx context.Context, req *proto.GreetRequest) (*pro
 
 func main() {
 	flag.Parse()
-	err := discovery.Init(*EtcdAddr)
+	err := discovery.Init(strings.Split(*EtcdAddr, ";"))
 	if err != nil {
 		fmt.Println(err)
 		return

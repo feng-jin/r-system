@@ -1,0 +1,11 @@
+env="test"
+etcd=["127.0.0.1:2379"]
+
+[Redis]
+addrs          = "127.0.0.1:6379"
+pool_size      = 1
+pwd            = ""
+
+[Log]
+level = "INFO"
+dir = "../../logs/test/rank_server.log"

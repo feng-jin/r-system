@@ -59,7 +59,6 @@ func (r *EtcdResolver) watch() {
 		fmt.Println("获取服务地址列表失败：", err)
 	} else {
 		for i := range resp.Kvs {
-			fmt.Println(strings.TrimPrefix(string(resp.Kvs[i].Key), r.dir))
 			addrList = append(addrList, resolver.Address{Addr: strings.TrimPrefix(string(resp.Kvs[i].Key), r.dir)})
 		}
 	}

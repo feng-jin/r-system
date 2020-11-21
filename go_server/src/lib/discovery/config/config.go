@@ -18,5 +18,8 @@ const (
 
 // server name
 const (
-	GreetServer = "greet_server"
+	GreetServer  = "greet_server"
+	RecallServer = "recall_server"
+	RankServer   = "rank_server"
+	FilterServer = "filter_server"
 )

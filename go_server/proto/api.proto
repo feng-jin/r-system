@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package api;
+option go_package = "go_server/src/lib/proto/api";
+
+// 包括人口学特征，一些上下文特征等，后面会一直透传这些特征。
+message RecReq {
+    string trace_id    = 1;
+    string user_id     = 2;
+    string gender      = 3;
+    int32 age          = 4;
+    string app_version = 5;
+    string network     = 6;
+    int32 page_num     = 7;
+    int32 page_size    = 8;
+}
+
+message RecRespItem {
+    string item_id = 1;
+    string params  = 2;
+}
+
+message RecResp {
+    repeated RecRespItem items = 1;
+}
+
+service Rec {
+    rpc Rec (RecReq) returns (RecResp) {}
+}

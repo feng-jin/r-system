@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package errmsg;
+option go_package = "go_server/src/lib/proto/errmsg";
+
+message ErrMsg {
+  int32 code = 1;
+  string message = 2;
+}
+
+message EmptyResp {
+  ErrMsg err = 1;
+}

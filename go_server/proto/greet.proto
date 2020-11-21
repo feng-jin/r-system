@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-
-option go_package = "src/lib/proto/greet";
+package greet;
+option go_package = "go_server/src/lib/proto/greet";
 
 service Greet {
   rpc Morning(GreetRequest)returns(GreetResponse){}

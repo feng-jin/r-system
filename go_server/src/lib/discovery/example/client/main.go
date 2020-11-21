@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go_server/src/lib/discovery"
 	proto "go_server/src/lib/proto/greet"
+	"strings"
 	"time"
 )
 
@@ -15,7 +16,7 @@ var (
 
 func main() {
 	flag.Parse()
-	err := discovery.Init(*EtcdAddr)
+	err := discovery.Init(strings.Split(*EtcdAddr, ";"))
 	if err != nil {
 		fmt.Println(err)
 		return

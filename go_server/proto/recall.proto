@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+import "api.proto";
+import "errmsg.proto";
+
+package recall;
+option go_package = "go_server/src/lib/proto/recall";
+
+message RecallReq {
+    api.RecReq req = 1;
+    string bucket  = 2;
+}
+
+message RecallRespItems {
+    string         item_id = 1;
+    float           weight = 2;
+    repeated string labels = 3;
+    float           score  = 4;
+}
+
+message RecallResp {
+    errmsg.ErrMsg err              = 1;
+    repeated RecallRespItems items = 2;
+}
+
+service Recall {
+    rpc Recall (RecallReq) returns (RecallResp) {}
+}
